@@ -131,7 +131,7 @@ C ABI의 미적분 래퍼는 현재 `f(x)=ax²+bx+c`를 받습니다. C++ 내부
 독립 데모:
 
 ```sh
-g++ -std=c++17 -DGPAI_ENGINE_STANDALONE -DGPAI_CORE_BUILD -Icpp cpp/gpai_engine.cpp -o gpai_engine
+g++ -std=c++17 -DGPAI_ENGINE_STANDALONE -DGPAI_CORE_BUILD -Icpp cpp/gpai_core.cpp cpp/gpai_engine.cpp -o gpai_engine
 ./gpai_engine
 ```
 
