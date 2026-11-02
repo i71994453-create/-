@@ -115,3 +115,8 @@ C ABI의 미적분 래퍼는 현재 `f(x)=ax²+bx+c`를 받습니다. C++ 내부
 - University of Nebraska–Lincoln, [Thermodynamics formula sheet](https://physics.unl.edu/sites/unl.edu.cas.physics/files/media/file/DayIIExam_Aug24.pdf): 카르노 효율 관계를 포함한 열역학 요약 자료입니다.
 
 이 참고 자료는 구현된 기초식의 출처입니다. 실제 설계 검토에서는 재료 데이터, 하중 조건, 적용 규격과 안전계수를 별도로 확인해야 합니다.
+
+
+## AI API 디스패처
+
+`gpai_dispatch.cpp`는 `gpai_calculate` C ABI로 계산 함수 이름, 입력 개수, 출력 개수를 확인한 뒤 기존 C ABI 함수만 호출합니다. Simpson 적분의 분할 수는 정수 여부와 범위를 확인합니다. Python 백엔드는 이를 공유 라이브러리로 빌드하고 `ctypes`로 호출합니다. 기존 함수의 상태 코드는 그대로 전달됩니다.

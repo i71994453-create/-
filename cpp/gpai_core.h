@@ -1,6 +1,8 @@
 #ifndef GPAI_CORE_H
 #define GPAI_CORE_H
 
+#include <stddef.h>
+
 #if defined(_WIN32)
 #  if defined(GPAI_CORE_BUILD)
 #    define GPAI_API __declspec(dllexport)
@@ -21,6 +23,11 @@ enum gpai_status {
     GPAI_STATUS_OVERFLOW = 2,
     GPAI_STATUS_INTERNAL_ERROR = 3
 };
+
+/* Generic allowlisted dispatcher used by the Python AI API. */
+GPAI_API int gpai_calculate(
+    const char* operation, const double* inputs, size_t input_count,
+    double* outputs, size_t output_count);
 
 /* Calculus: the function is f(x) = a*x*x + b*x + c. */
 GPAI_API int gpai_calc_derivative_quadratic(

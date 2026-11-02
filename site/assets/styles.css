@@ -84,3 +84,11 @@ footer { padding-top: 16px; border-top: 1px solid var(--line); color: var(--mute
   .selector-row, .input-grid { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
+
+.ai-result { min-height: 54px; margin-top: 16px; padding: 14px; border-radius: 11px; background: #f3f6fa; color: #41516a; }
+.ai-answer { margin-bottom: 10px; white-space: pre-wrap; }
+.ai-calculation { display: grid; gap: 8px; margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.ai-calculation > strong { color: var(--ink); font-size: .84rem; }
+.ai-calculation .result-row { padding-bottom: 5px; }
+.ai-panel .button.primary { width: auto; min-width: 150px; margin-top: 0; }
+@media (max-width: 620px) { .ai-panel .button.primary { width: 100%; } }

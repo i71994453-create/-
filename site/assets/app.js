@@ -295,6 +295,85 @@ function calculate(event) {
   }
 }
 
+
+function apiBaseUrl() {
+  let value = (window.GPAI_API_BASE_URL || "").trim();
+  while (value.endsWith("/")) value = value.slice(0, -1);
+  return value;
+}
+
+function setupAiCalculator() {
+  const button = byId("ai-solve-button");
+  const status = byId("ai-status");
+  if (!apiBaseUrl()) {
+    button.disabled = true;
+    setStatus(status, "AI 서버 주소 설정 필요", "error");
+    byId("ai-result").textContent =
+      "site/assets/config.js에 배포된 GPAI API 주소를 설정하면 AI 계산을 사용할 수 있습니다.";
+    return;
+  }
+  button.disabled = false;
+  setStatus(status, "AI 서버 연결 설정됨", "ready");
+  button.addEventListener("click", solveWithAi);
+}
+
+function renderAiResponse(payload) {
+  const box = byId("ai-result");
+  box.replaceChildren();
+  const answer = document.createElement("p");
+  answer.className = "ai-answer";
+  answer.textContent = payload.answer || "AI 응답이 비어 있습니다.";
+  box.append(answer);
+
+  for (const calculation of payload.calculations || []) {
+    const card = document.createElement("div");
+    card.className = "ai-calculation";
+    const heading = document.createElement("strong");
+    heading.textContent = calculation.name + " · " + calculation.formula;
+    card.append(heading);
+    for (const output of calculation.outputs || []) {
+      const row = document.createElement("div");
+      row.className = "result-row";
+      const label = document.createElement("span");
+      label.textContent = output.label;
+      const value = document.createElement("strong");
+      value.textContent = formatNumber(output.value) + (output.unit ? " " + output.unit : "");
+      row.append(label, value);
+      card.append(row);
+    }
+    box.append(card);
+  }
+}
+
+async function solveWithAi() {
+  const button = byId("ai-solve-button");
+  const status = byId("ai-status");
+  const question = byId("ai-question").value.trim();
+  if (question.length < 4) {
+    byId("ai-result").textContent = "문제와 필요한 값을 4자 이상 입력하세요.";
+    return;
+  }
+  button.disabled = true;
+  setStatus(status, "AI가 입력을 해석하고 C++로 계산 중", "");
+  byId("ai-result").textContent = "계산을 요청했습니다. 잠시 기다려 주세요.";
+  try {
+    const response = await fetch(apiBaseUrl() + "/api/solve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question })
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.detail || "HTTP " + response.status);
+    renderAiResponse(payload);
+    setStatus(status, "응답 완료 · C++ 계산값 포함", "ready");
+  } catch (error) {
+    byId("ai-result").textContent = "요청 실패: " + error.message;
+    setStatus(status, "AI 서버 오류", "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function init() {
   renderOperations();
   domainSelect.addEventListener("change", renderOperations);
@@ -304,6 +383,7 @@ function init() {
     if ((event.ctrlKey || event.metaKey) && event.key === "Enter") showClassification();
   });
   byId("calculator-form").addEventListener("submit", calculate);
+  setupAiCalculator();
   loadEngine();
   loadModel();
 }
