@@ -104,7 +104,7 @@ C ABI의 미적분 래퍼는 현재 `f(x)=ax²+bx+c`를 받습니다. C++ 내부
 - 미적분 기능은 **수치 근사**입니다. 기호 미분·적분이나 모든 방정식의 해를 제공하지 않습니다.
 - 재료역학 함수는 기본 선형 탄성 공식입니다. 좌굴, 소성, 피로, 응력 집중, 복합 하중, 실제 부재의 안전 설계를 대신하지 않습니다.
 - 열역학 함수의 상태식은 이상기체 가정입니다. 실제 유체의 상태방정식이나 상변화는 포함하지 않습니다.
-- 이 헤더는 계산 라이브러리이며 웹 UI 연결 및 WebAssembly JavaScript 바인딩은 별도 작업입니다. Emscripten에서 예외를 JavaScript로 전달하려면 해당 빌드 설정도 지정해야 합니다.
+- `gpai_core.h/.cpp` expose these calculations through a C ABI. `site/assets/app.js` calls that API in the browser, and the Pages workflow compiles it with Emscripten. The C++ exceptions are caught inside the C ABI; the WebAssembly build enables exception support so the status-code boundary can work.
 
 ## 참고 자료
 
