@@ -101,7 +101,7 @@ double calc_derivative(double x, double a, double b, double c) {
 }
 
 double calc_derivative_exact(double x, double a, double b, double c) {
-    (void)c;
+    if (!std::isfinite(c)) return error_value();
     return from_core([=](double* out) {
         return gpai_calc_derivative_exact_quadratic(x, a, b, out);
     });
@@ -249,12 +249,9 @@ double thermo_constant_pressure_work(
 
 double thermo_carnot_efficiency(double temp_low_K, double temp_high_K) {
     return from_core([=](double* out) {
-        const int status = gpai_thermo_carnot_efficiency_percent(
+        return gpai_thermo_carnot_efficiency_percent(
             temp_low_K, temp_high_K, out);
-        if (status != GPAI_STATUS_OK) return status;
-        *out /= 100.0;
-        return std::isfinite(*out) ? GPAI_STATUS_OK : GPAI_STATUS_OVERFLOW;
-    }) * 100.0;
+    });
 }
 
 double thermo_enthalpy(double internal_energy_J, double pressure_Pa, double volume_m3) {
