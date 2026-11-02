@@ -18,7 +18,7 @@ python training/train.py --output dist/assets/domain-model.json
 cp site/index.html dist/index.html
 mkdir -p dist/assets
 cp site/assets/* dist/assets/
-emcc cpp/gpai_core.cpp -std=c++17 -O2 -fexceptions -DGPAI_CORE_BUILD -Icpp \
+em++ cpp/gpai_core.cpp -std=c++17 -O2 -fexceptions -DGPAI_CORE_BUILD -Icpp \
   -sDISABLE_EXCEPTION_CATCHING=0 \
   -sMODULARIZE=1 -sEXPORT_NAME=createGpaiModule -sENVIRONMENT=web \
   -sEXPORTED_FUNCTIONS=@cpp/wasm_exports.json \
