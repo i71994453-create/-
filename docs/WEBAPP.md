@@ -121,3 +121,19 @@ gcloud run deploy gpai-ai-api \
 - Google AI for Developers, [API key security](https://ai.google.dev/gemini-api/docs/api-key)
 - GitHub Docs, [GitHub Pages custom workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
 - Emscripten, [C++/JavaScript interop](https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html)
+
+
+## C++ 삽입 정렬
+
+첨부된 단일 파일은 이미 `gpai_core.cpp`에 있는 계산식과 대부분 겹쳤고, 무조건 실행되는 `main()`이 공유 라이브러리 빌드를 방해했습니다. 계산 공식은 기존 코어를 그대로 사용하고, 별도 `cpp/gpai_engine.cpp`에 안정적인 삽입 정렬과 선택 실행 데모를 추가했습니다.
+
+웹 화면은 숫자 목록 최대 1,000개를 WebAssembly C++ 함수로 정렬합니다. 입력은 브라우저에서만 처리됩니다. 삽입 정렬은 최선의 경우 O(n), 최악의 경우 O(n²), 추가 메모리 O(1)입니다. Princeton University의 [Algorithms, 4th Edition — Insertion](https://algs4.cs.princeton.edu/code/javadoc/edu/princeton/cs/algs4/Insertion.html) 설명을 참고했습니다.
+
+독립 실행 데모를 빌드하려면 C++17 컴파일러를 설치한 뒤 저장소 루트에서 실행합니다.
+
+```powershell
+g++ -std=c++17 -DGPAI_ENGINE_STANDALONE -DGPAI_CORE_BUILD -Icpp cpp/gpai_core.cpp cpp/gpai_engine.cpp -o gpai_engine.exe
+.\gpai_engine.exe
+```
+
+웹앱 빌드는 GitHub Actions가 `gpai_engine.cpp`를 기존 계산 코어와 함께 Emscripten으로 컴파일합니다.

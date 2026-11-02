@@ -206,10 +206,13 @@ async function loadEngine() {
     engine = await createGpaiModule();
     setStatus(status, "C++ WebAssembly 준비 완료", "ready");
     calculateButton.disabled = false;
+    byId("sort-button").disabled = false;
+    setStatus(byId("sort-status"), "C++ 정렬 엔진 준비 완료", "ready");
   } catch (error) {
     setStatus(status, "C++ 엔진을 불러오지 못함", "error");
     byId("calculation-result").textContent =
       "브라우저가 WebAssembly 파일을 불러오지 못했습니다. 배포 빌드가 완료됐는지 확인하세요.";
+    setStatus(byId("sort-status"), "C++ 엔진을 불러오지 못함", "error");
     console.error(error);
   }
 }
@@ -374,6 +377,64 @@ async function solveWithAi() {
   }
 }
 
+
+function sortValuesWithCpp() {
+  const output = byId("sort-result");
+  const source = byId("sort-values").value.trim()
+    .replaceAll(",", " ")
+    .replaceAll(";", " ")
+    .replaceAll(String.fromCharCode(9), " ")
+    .replaceAll(String.fromCharCode(10), " ")
+    .replaceAll(String.fromCharCode(13), " ");
+  const tokens = source.split(" ").filter(Boolean);
+  if (tokens.length === 0) {
+    output.textContent = "정렬할 숫자를 입력하세요.";
+    return;
+  }
+  if (tokens.length > 1000) {
+    output.textContent = "한 번에 최대 1,000개까지 정렬할 수 있습니다.";
+    return;
+  }
+  const values = tokens.map(Number);
+  if (values.some((value) => !Number.isFinite(value))) {
+    output.textContent = "모든 항목에 유한한 숫자를 입력하세요.";
+    return;
+  }
+  if (!engine) {
+    output.textContent = "C++ WebAssembly 엔진이 아직 준비되지 않았습니다.";
+    return;
+  }
+
+  const pointer = engine._malloc(values.length * 8);
+  if (!pointer) {
+    output.textContent = "정렬 메모리를 확보하지 못했습니다.";
+    return;
+  }
+  try {
+    values.forEach((value, index) => engine.setValue(pointer + index * 8, value, "double"));
+    const descending = byId("sort-order").value === "descending" ? 1 : 0;
+    const status = engine.ccall(
+      "gpai_engine_insertion_sort",
+      "number",
+      ["number", "number", "number"],
+      [pointer, values.length, descending]
+    );
+    if (status !== 0) {
+      output.textContent = status === 1 ? "정렬 입력을 확인하세요." : "C++ 정렬 오류 코드: " + status;
+      return;
+    }
+    const sorted = values.map((_, index) => engine.getValue(pointer + index * 8, "double"));
+    output.textContent = sorted.map(formatNumber).join(", ");
+    setStatus(byId("sort-status"), "삽입 정렬 완료", "ready");
+  } catch (error) {
+    output.textContent = "정렬 실행 중 오류가 발생했습니다.";
+    setStatus(byId("sort-status"), "정렬 오류", "error");
+    console.error(error);
+  } finally {
+    engine._free(pointer);
+  }
+}
+
 function init() {
   renderOperations();
   domainSelect.addEventListener("change", renderOperations);
@@ -383,6 +444,7 @@ function init() {
     if ((event.ctrlKey || event.metaKey) && event.key === "Enter") showClassification();
   });
   byId("calculator-form").addEventListener("submit", calculate);
+  byId("sort-button").addEventListener("click", sortValuesWithCpp);
   setupAiCalculator();
   loadEngine();
   loadModel();

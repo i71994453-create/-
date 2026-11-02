@@ -24,6 +24,9 @@ enum gpai_status {
     GPAI_STATUS_INTERNAL_ERROR = 3
 };
 
+/* Stable insertion sort: descending is 0 for ascending or 1 for descending. */
+GPAI_API int gpai_engine_insertion_sort(double* values, size_t count, int descending);
+
 /* Generic allowlisted dispatcher used by the Python AI API. */
 GPAI_API int gpai_calculate(
     const char* operation, const double* inputs, size_t input_count,

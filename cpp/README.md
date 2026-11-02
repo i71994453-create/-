@@ -120,3 +120,19 @@ C ABI의 미적분 래퍼는 현재 `f(x)=ax²+bx+c`를 받습니다. C++ 내부
 ## AI API 디스패처
 
 `gpai_dispatch.cpp`는 `gpai_calculate` C ABI로 계산 함수 이름, 입력 개수, 출력 개수를 확인한 뒤 기존 C ABI 함수만 호출합니다. Simpson 적분의 분할 수는 정수 여부와 범위를 확인합니다. Python 백엔드는 이를 공유 라이브러리로 빌드하고 `ctypes`로 호출합니다. 기존 함수의 상태 코드는 그대로 전달됩니다.
+
+
+## 삽입 정렬 엔진
+
+`gpai_engine.cpp`는 `gpai_engine_insertion_sort` C ABI를 제공합니다. `descending=0`이면 오름차순, `descending=1`이면 내림차순으로 원본 배열을 제자리에서 안정적으로 정렬합니다. null 배열, 잘못된 방향 플래그, NaN 또는 무한 입력은 `GPAI_STATUS_INVALID_ARGUMENT`를 반환하며 값을 재배치하기 전에 모든 항목을 검사합니다.
+
+삽입 정렬은 거의 정렬된 작은 배열에서 유용하지만 역순 입력의 최악 시간은 O(n²)입니다. 이 프로젝트의 화면은 최대 1,000개로 입력을 제한합니다. Princeton University, [Algorithms 4/e: Insertion](https://algs4.cs.princeton.edu/code/javadoc/edu/princeton/cs/algs4/Insertion.html)을 참고하세요.
+
+독립 데모:
+
+```sh
+g++ -std=c++17 -DGPAI_ENGINE_STANDALONE -DGPAI_CORE_BUILD -Icpp cpp/gpai_core.cpp cpp/gpai_engine.cpp -o gpai_engine
+./gpai_engine
+```
+
+Windows에서는 결과 파일명을 `gpai_engine.exe`로 지정해 실행합니다. 상시 빌드에서는 `GPAI_ENGINE_STANDALONE`을 정의하지 않아 두 번째 `main`이 생기지 않습니다.

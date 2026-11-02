@@ -40,16 +40,16 @@ jobs:
           cp site/assets/styles.css site/assets/config.js site/assets/app.js dist/assets/
       - name: Compile the C++ calculator to WebAssembly
         run: >-
-          em++ cpp/gpai_core.cpp
+          em++ cpp/gpai_core.cpp cpp/gpai_engine.cpp
           -std=c++17 -O2 -fexceptions -DGPAI_CORE_BUILD -Icpp
           -sDISABLE_EXCEPTION_CATCHING=0
           -sMODULARIZE=1 -sEXPORT_NAME=createGpaiModule -sENVIRONMENT=web
           -sEXPORTED_FUNCTIONS=@cpp/wasm_exports.json
-          -sEXPORTED_RUNTIME_METHODS=ccall,getValue
+          -sEXPORTED_RUNTIME_METHODS=ccall,getValue,setValue
           -o dist/assets/gpai_core.js
       - name: Compile native C++ dispatcher for AI API
         run: >-
-          g++ cpp/gpai_core.cpp cpp/gpai_dispatch.cpp
+          g++ cpp/gpai_core.cpp cpp/gpai_engine.cpp cpp/gpai_dispatch.cpp
           -std=c++17 -O2 -fPIC -shared -DGPAI_CORE_BUILD -Icpp
           -o /tmp/libgpai_core.so
       - name: Upload Pages artifact

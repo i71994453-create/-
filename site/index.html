@@ -79,7 +79,28 @@
       <div id="calculation-result" class="calculation-result" aria-live="polite">계산 결과가 이곳에 표시됩니다.</div>
     </section>
 
-    <section class="notes">
+<section class="panel sort-panel" aria-labelledby="sort-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">04 / C++ 삽입 정렬</p><h2 id="sort-title">숫자 목록을 정렬하세요</h2></div>
+        <span id="sort-status" class="status">C++ 엔진 준비 중</span>
+      </div>
+      <label for="sort-values">쉼표나 공백으로 숫자를 구분하세요 (최대 1,000개)</label>
+      <textarea id="sort-values" rows="3" placeholder="예: 7, 2, 9, -1, 2, 4"></textarea>
+      <div class="sort-controls">
+        <div class="field">
+          <label for="sort-order">정렬 방향</label>
+          <select id="sort-order">
+            <option value="ascending">오름차순</option>
+            <option value="descending">내림차순</option>
+          </select>
+        </div>
+        <button id="sort-button" class="button primary" type="button" disabled>C++ 삽입 정렬</button>
+      </div>
+      <div id="sort-result" class="calculation-result" aria-live="polite">값을 입력하면 WebAssembly C++ 엔진이 삽입 정렬을 실행합니다.</div>
+      <p class="fine-print">삽입 정렬은 작은 목록에 적합한 O(n²) 비교 기반 정렬입니다. 입력값은 페이지 안에서 처리되며 서버로 전송하지 않습니다.</p>
+    </section>
+
+        <section class="notes">
       <h2>계산 범위와 주의점</h2>
       <ul>
         <li>입력 기본 단위는 SI입니다. 온도는 K, 압력·응력은 Pa, 에너지는 J, 각도 출력은 rad 또는 표시된 단위를 사용합니다.</li>

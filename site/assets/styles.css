@@ -92,3 +92,7 @@ footer { padding-top: 16px; border-top: 1px solid var(--line); color: var(--mute
 .ai-calculation .result-row { padding-bottom: 5px; }
 .ai-panel .button.primary { width: auto; min-width: 150px; margin-top: 0; }
 @media (max-width: 620px) { .ai-panel .button.primary { width: 100%; } }
+
+.sort-controls { display: grid; grid-template-columns: minmax(150px, .6fr) 1fr; gap: 14px; align-items: end; margin-top: 14px; }
+.sort-controls .button.primary { width: 100%; margin-top: 0; }
+@media (max-width: 620px) { .sort-controls { grid-template-columns: 1fr; } }
