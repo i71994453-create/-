@@ -380,7 +380,13 @@ async function solveWithAi() {
 
 function sortValuesWithCpp() {
   const output = byId("sort-result");
-  const tokens = byId("sort-values").value.trim().split(/[\\s,;]+/).filter(Boolean);
+  const source = byId("sort-values").value.trim()
+    .replaceAll(",", " ")
+    .replaceAll(";", " ")
+    .replaceAll(String.fromCharCode(9), " ")
+    .replaceAll(String.fromCharCode(10), " ")
+    .replaceAll(String.fromCharCode(13), " ");
+  const tokens = source.split(" ").filter(Boolean);
   if (tokens.length === 0) {
     output.textContent = "정렬할 숫자를 입력하세요.";
     return;
