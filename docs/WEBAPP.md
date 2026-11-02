@@ -132,7 +132,7 @@ gcloud run deploy gpai-ai-api \
 독립 실행 데모를 빌드하려면 C++17 컴파일러를 설치한 뒤 저장소 루트에서 실행합니다.
 
 ```powershell
-g++ -std=c++17 -DGPAI_ENGINE_STANDALONE -DGPAI_CORE_BUILD -Icpp cpp/gpai_engine.cpp -o gpai_engine.exe
+g++ -std=c++17 -DGPAI_ENGINE_STANDALONE -DGPAI_CORE_BUILD -Icpp cpp/gpai_core.cpp cpp/gpai_engine.cpp -o gpai_engine.exe
 .\gpai_engine.exe
 ```
 
