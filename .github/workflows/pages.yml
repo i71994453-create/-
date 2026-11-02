@@ -39,8 +39,14 @@ jobs:
           cp site/index.html dist/index.html
           cp site/assets/styles.css site/assets/app.js dist/assets/
       - name: Compile the C++ calculator to WebAssembly
-        run: |
-          emcc cpp/gpai_core.cpp             -std=c++17 -O2 -fexceptions -DGPAI_CORE_BUILD -Icpp             -sDISABLE_EXCEPTION_CATCHING=0             -sMODULARIZE=1 -sEXPORT_NAME=createGpaiModule -sENVIRONMENT=web             -sEXPORTED_FUNCTIONS=@cpp/wasm_exports.json             -sEXPORTED_RUNTIME_METHODS=ccall,getValue             -o dist/assets/gpai_core.js
+        run: >-
+          emcc cpp/gpai_core.cpp
+          -std=c++17 -O2 -fexceptions -DGPAI_CORE_BUILD -Icpp
+          -sDISABLE_EXCEPTION_CATCHING=0
+          -sMODULARIZE=1 -sEXPORT_NAME=createGpaiModule -sENVIRONMENT=web
+          -sEXPORTED_FUNCTIONS=@cpp/wasm_exports.json
+          -sEXPORTED_RUNTIME_METHODS=ccall,getValue
+          -o dist/assets/gpai_core.js
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
