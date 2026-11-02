@@ -1,0 +1,64 @@
+name: GPAI Pages
+
+on:
+  push:
+    branches:
+      - main
+      - feature/gpai-domain-calculations
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gpai-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Install Emscripten
+        uses: emscripten-core/setup-emsdk@v16
+        with:
+          version: 6.0.10
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Train the Python topic classifier
+        run: python training/train.py --output dist/assets/domain-model.json
+      - name: Assemble static site
+        run: |
+          mkdir -p dist/assets
+          cp site/index.html dist/index.html
+          cp site/assets/styles.css site/assets/app.js dist/assets/
+      - name: Compile the C++ calculator to WebAssembly
+        run: |
+          emcc cpp/gpai_core.cpp             -std=c++17 -O2 -fexceptions -DGPAI_CORE_BUILD -Icpp             -sDISABLE_EXCEPTION_CATCHING=0             -sMODULARIZE=1 -sEXPORT_NAME=createGpaiModule -sENVIRONMENT=web             -sEXPORTED_FUNCTIONS=@cpp/wasm_exports.json             -sEXPORTED_RUNTIME_METHODS=ccall,getValue             -o dist/assets/gpai_core.js
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Read Pages configuration
+        uses: actions/configure-pages@v6
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
