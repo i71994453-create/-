@@ -1,61 +1,123 @@
-# GPAI 정적 웹앱
+# GPAI 공개 웹앱과 AI 계산 API
 
-## 실행 구조
+## 구성 요소
 
-- `site/index.html`은 공개 화면입니다. 빌드 후 Pages 문서 루트로 복사됩니다.
-- `cpp/gpai_core.cpp`와 `cpp/gpai_calculations.hpp`가 계산을 수행합니다. Emscripten이 이를 WebAssembly로 컴파일하며 브라우저는 `ctypes` 대신 C ABI를 JavaScript에서 호출합니다.
-- `training/examples.json`은 분야 분류용으로 직접 작성한 48개 한국어 예시입니다.
-- `training/train.py`는 표준 Python만 사용해 다항 나이브 베이즈 분류기를 학습하고 `assets/domain-model.json`을 만듭니다.
-- 정적 페이지에서 Python 서버를 실행하지 않습니다. Python 학습은 GitHub Actions 빌드 중에 실행되고, 만들어진 JSON 모델은 정적 파일로 공개됩니다.
-- 문제 입력은 브라우저에서 분류하고 계산하며 GPAI 서버로 보내지 않습니다. 기존 Gemini API 키나 서버 비밀값은 새 계산 페이지에서 사용하지 않습니다.
+| 구성요소 | 역할 |
+|---|---|
+| `site/` | GitHub Pages에 올라가는 정적 화면 |
+| `cpp/gpai_core.cpp` | 미적분·재료역학·열역학·기하의 계산 코어 |
+| `cpp/gpai_dispatch.cpp` | 허용 목록에 있는 C++ 계산만 호출하는 디스패처 |
+| `backend/app.py` | 자연어 문제를 AI에 전달하고 함수 호출 흐름을 조정하는 FastAPI 서버 |
+| `backend/engine.py` | 입력을 검증하고 C ABI로 C++ 공유 라이브러리를 호출 |
+| `backend/calculations.json` | 화면과 AI가 공유하는 계산 항목·입력·출력 정의 |
+| `training/` | Python 분야 분류기 학습 예시와 코드 |
+| `.github/workflows/pages.yml` | Pages 파일, Python 모델, WebAssembly와 네이티브 C++ API 빌드 |
 
-## 로컬 빌드
+## AI 요청 흐름
 
-Python 3.10 이상과 Emscripten SDK가 필요합니다.
+1. 브라우저가 문제 문장을 `POST /api/solve`로 Python API에 보냅니다.
+2. Python API가 Gemini에 계산 도구 명세를 전달합니다. 모델은 계산 항목과 숫자 인자를 제안합니다. 모델이 직접 계산 코드를 실행하지는 않습니다.
+3. 서버는 도구 이름이 허용 목록에 있는지 확인하고 인자 개수·자료형·유한 숫자 여부를 검사합니다.
+4. `gpai_dispatch.cpp`가 C++ 계산 함수를 호출합니다. 실제 계산값은 C++ 결과를 그대로 반환합니다.
+5. Python API가 결과를 AI에 전달해 설명을 생성하고, 응답에도 C++ 결과를 별도 필드로 넣습니다.
 
-```sh
-python training/train.py --output dist/assets/domain-model.json
-cp site/index.html dist/index.html
-mkdir -p dist/assets
-cp site/assets/* dist/assets/
-em++ cpp/gpai_core.cpp -std=c++17 -O2 -fexceptions -DGPAI_CORE_BUILD -Icpp \
-  -sDISABLE_EXCEPTION_CATCHING=0 \
-  -sMODULARIZE=1 -sEXPORT_NAME=createGpaiModule -sENVIRONMENT=web \
-  -sEXPORTED_FUNCTIONS=@cpp/wasm_exports.json \
-  -sEXPORTED_RUNTIME_METHODS=ccall,getValue \
-  -o dist/assets/gpai_core.js
+값이나 단위가 부족하면 AI가 확인을 요청하도록 지시합니다. Gemini 요청은 `store=False`인 stateless 방식으로 보냅니다. 문제 문장은 GPAI 서버와 Gemini API로 전송됩니다.
+
+## 로컬 실행 — Windows PowerShell
+
+필요한 도구: Docker Desktop, Python 3.10 이상, Emscripten SDK. Gemini API 키는 Google AI Studio에서 발급해 서버에서만 사용합니다.
+
+### 1. 서버 비밀값 설정
+
+저장소 루트에서:
+
+```powershell
+Copy-Item backend/.env.example backend/.env
+notepad backend/.env
 ```
 
-그 다음 `dist`를 정적 HTTP 서버로 제공하세요. `file://`로 HTML 파일을 직접 열면 모델 JSON과 WebAssembly 파일 로딩이 차단될 수 있습니다.
+`GEMINI_API_KEY`에 키를 입력합니다. `backend/.env`는 Git과 Docker 빌드에서 제외됩니다. 키를 `site/assets/config.js`, HTML, JavaScript, GitHub 커밋에 넣지 마세요.
 
-## GitHub Pages 배포
+### 2. C++ 계산 API 실행
 
-워크플로 `.github/workflows/pages.yml`은 PR과 기능 브랜치에서 빌드 아티팩트를 만들고, `main`에 push되면 GitHub Pages에 배포합니다. 저장소의 **Settings → Pages → Build and deployment → Source**가 **GitHub Actions**여야 합니다. 배포 후 주소는 [https://i71994453-create.github.io/-/](https://i71994453-create.github.io/-/)입니다.
+```powershell
+docker build -t gpai-ai-api .
+docker run --rm --env-file backend/.env -p 8000:8080 -e GPAI_ALLOWED_ORIGINS=http://localhost:8080 gpai-ai-api
+```
 
-정적 사이트라서 공개 주소를 아는 사람은 페이지와 배포 파일에 접근할 수 있습니다. Python 서버 코드는 실행되지 않고, API 키를 공유하거나 학습 데이터에 넣지 않습니다.
+새 PowerShell 창에서 `http://localhost:8000/api/health`를 열면 API 상태를 확인할 수 있습니다.
 
-## 분류 모델의 의미
+### 3. 웹 프런트엔드 빌드 및 실행
 
-나이브 베이즈 모델은 미적분, 재료역학, 열역학, 기하 중 입력 문장에 가까운 분야를 제안합니다. 제공된 작은 예시 모음으로 학습하므로 전문 용어가 다르거나 여러 분야를 함께 다루는 질문에서 오분류할 수 있습니다. UI의 상대 모델 점수는 확률 보정이 된 신뢰도 값이 아닙니다. 정답을 풀이하는 생성형 AI 모델이 아니며, 최종 계산식과 입력 조건은 사용자가 확인해야 합니다. 데이터를 보강하려면 `training/examples.json`에 대표 문장을 추가하고 같은 학습 명령을 실행하세요.
+Emscripten SDK가 활성화된 PowerShell에서 저장소 루트로 실행합니다.
 
-## 계산 범위
+```powershell
+New-Item -ItemType Directory -Force dist/assets | Out-Null
+python training/train.py --output dist/assets/domain-model.json
+Copy-Item site/index.html dist/index.html
+Copy-Item site/assets/styles.css,site/assets/config.js,site/assets/app.js dist/assets/
+```
 
-웹 화면은 C API의 계산 함수를 제공합니다. 단위는 SI입니다. Simpson 수치 적분에는 양의 짝수 구간 수가 필요합니다. C++에서 입력 범위를 확인하고 상태 코드로 입력 오류, 오버플로, 내부 오류를 전달합니다.
+`site/assets/config.js`에서 로컬 API 주소를 설정합니다.
 
-재료역학 기능은 균일 단면·선형 탄성·기초 보 이론의 식을 계산합니다. 실제 설계, 좌굴, 피로, 소성, 응력 집중, 복합 하중과 법규 검증을 포함하지 않습니다. 열역학의 상태식은 이상기체 가정이며 실제 유체의 상변화나 상태방정식을 다루지 않습니다. 계산 결과는 교육용 기초 계산입니다.
+```js
+window.GPAI_API_BASE_URL = "http://localhost:8000";
+```
 
-## 대학 강의 자료 및 공식 출처
+그 후 C++ 코어를 WebAssembly로 빌드하고 정적 파일 서버를 실행합니다.
 
-- University of California, Berkeley, [Math 128A Lecture Notes, Chapter 4](https://persson.berkeley.edu/math128a/lecture_notes/math128a_lecture_notes_chapter_4.html): 수치 미분, Simpson 적분과 오차.
-- University of Colorado Boulder, [Introductory Engineering Design, Chapter 14](https://www.colorado.edu/program/ide/sites/default/files/attached-files/introductory_engineering_design_textbook_0_0.pdf): 축응력, Hooke 법칙, 축변형, 굽힘과 원형축 비틀림.
-- Massachusetts Institute of Technology, [2.017J Topics in Machine Elements](https://ocw.mit.edu/courses/2-017j-design-of-electromechanical-robotic-systems-fall-2009/16cb0f850752422026a85d838f30e340_MIT2_017JF09_machines.pdf): 극관성 모멘트, 축 비틀림, 응력 공식.
-- University of California, Davis, [Physics 9B: First Law and Related Results](https://kiskis.physics.ucdavis.edu/student/phy9b_11/fstl.pdf): 이상기체식, 열역학 제1법칙과 등압 일.
-- University of Nebraska–Lincoln, [Thermodynamics Formula Sheet](https://physics.unl.edu/sites/unl.edu.cas.physics/files/media/file/DayIIExam_Aug24.pdf): 카르노 효율 등 열역학 관계식.
+```powershell
+em++ cpp/gpai_core.cpp -std=c++17 -O2 -fexceptions -DGPAI_CORE_BUILD -Icpp -sDISABLE_EXCEPTION_CATCHING=0 -sMODULARIZE=1 -sEXPORT_NAME=createGpaiModule -sENVIRONMENT=web -sEXPORTED_FUNCTIONS=@cpp/wasm_exports.json -sEXPORTED_RUNTIME_METHODS=ccall,getValue -o dist/assets/gpai_core.js
+python -m http.server 8080 --directory dist
+```
 
-이 자료들은 구현한 기초 공식의 출처입니다. 실제 기계·구조 설계에는 해당 분야의 적용 규격과 검증된 재료값이 필요합니다.
+브라우저에서 `http://localhost:8080`을 엽니다. 페이지의 C++ 계산기와 AI 계산 요청을 사용할 수 있습니다.
+
+## GitHub Pages와 공개 AI 서버
+
+GitHub Pages는 정적 파일 호스팅이라 Python API를 실행하지 않습니다. 공개 웹사이트에서 AI를 쓰려면 Pages 화면과 HTTPS가 적용된 별도 API 서버가 모두 필요합니다.
+
+클라우드 배포 전에 Google Cloud Secret Manager에 `gemini-api-key` 이름으로 API 키를 저장하고 Cloud Run 서비스 계정에 그 비밀값을 읽을 권한을 부여합니다. 저장소 루트에서 실행하는 예시입니다.
+
+```sh
+gcloud run deploy gpai-ai-api \
+  --source . \
+  --region asia-northeast3 \
+  --allow-unauthenticated \
+  --max 2 \
+  --set-secrets GEMINI_API_KEY=gemini-api-key:latest \
+  --set-env-vars GPAI_ALLOWED_ORIGINS=https://i71994453-create.github.io
+```
+
+배포가 끝나면 출력된 HTTPS 서비스 주소를 `site/assets/config.js`의 `GPAI_API_BASE_URL` 값에 넣고 변경 사항을 저장소에 반영합니다. Pages 설정의 **Settings → Pages → Build and deployment → Source**는 **GitHub Actions**여야 합니다.
+
+이 예시는 공개 API입니다. 코드의 10회/분 IP 제한은 각 서버 인스턴스 메모리에서만 작동해 전체 인스턴스의 정확한 제한이나 인증을 제공하지 않습니다. 공개 배포 전에 Cloud Run 최대 인스턴스·요청 제한, Gemini 사용량 한도와 결제 알림을 설정하세요. CORS는 브라우저 정책이지 접근 인증이 아닙니다.
+
+## 키와 개인정보 취급
+
+- `GEMINI_API_KEY`는 서버 환경 변수 또는 Secret Manager에서만 읽습니다.
+- `store=False`는 Gemini Interactions 저장을 끄는 API 설정입니다. 직접 운영하는 서버의 로그나 호스팅 사업자의 운영 로그까지 지우지는 않습니다.
+- AI 기능을 쓰면 입력한 문제와 값이 GPAI 백엔드와 Gemini API로 전송됩니다. 민감한 개인정보는 입력하지 마세요.
+- API 오류 응답에 공급자 원문이나 API 키를 넣지 않습니다.
+
+## 분야 분류 모델
+
+`training/examples.json`의 한국어 예시 48개로 나이브 베이즈 분류기를 학습합니다. 상대 모델 점수는 보정된 확률이 아니며, 여러 분야가 섞인 문제에서 오분류할 수 있습니다. 분야 분류는 풀이를 생성하는 AI와 별개 기능입니다.
+
+## 계산 범위와 학술 출처
+
+기본 단위는 SI입니다. Simpson 수치 적분은 양의 짝수 분할 수를 사용합니다. 재료역학 코어는 균일 단면·선형 탄성·기초 보 이론을 쓰며, 좌굴·피로·소성·응력 집중·복합 하중 및 법규 검증은 하지 않습니다. 열역학 함수는 이상기체 가정과 기초 관계식을 다룹니다. 결과는 교육용이며 실제 설계에 그대로 사용하지 마세요.
+
+- University of California, Berkeley, [Math 128A Lecture Notes, Chapter 4](https://persson.berkeley.edu/math128a/lecture_notes/math128a_lecture_notes_chapter_4.html): 수치 미분과 Simpson 적분.
+- University of Colorado Boulder, [Introductory Engineering Design, Chapter 14](https://www.colorado.edu/program/ide/sites/default/files/attached-files/introductory_engineering_design_textbook_0_0.pdf): 축응력·변형, 보 굽힘, 원형축 비틀림.
+- Massachusetts Institute of Technology, [2.017J Topics in Machine Elements](https://ocw.mit.edu/courses/2-017j-design-of-electromechanical-robotic-systems-fall-2009/16cb0f850752422026a85d838f30e340_MIT2_017JF09_machines.pdf): 단면 관성모멘트와 비틀림.
+- University of California, Davis, [Physics 9B: First Law and Related Results](https://kiskis.physics.ucdavis.edu/student/phy9b_11/fstl.pdf): 이상기체 상태식, 열역학 제1법칙, 등압 일.
+- University of Nebraska–Lincoln, [Thermodynamics Formula Sheet](https://physics.unl.edu/sites/unl.edu.cas.physics/files/media/file/DayIIExam_Aug24.pdf): 카르노 효율 등.
 
 ## 공식 기술 문서
 
-- [GitHub Pages custom workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
-- [Emscripten JavaScript/C++ interop](https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html)
-- [Emscripten C++ exceptions](https://emscripten.org/docs/porting/exceptions.html)
+- Google AI for Developers, [Gemini function calling](https://ai.google.dev/gemini-api/docs/function-calling)
+- Google AI for Developers, [Interactions API and data storage](https://ai.google.dev/gemini-api/docs/interactions-overview)
+- Google AI for Developers, [API key security](https://ai.google.dev/gemini-api/docs/api-key)
+- GitHub Docs, [GitHub Pages custom workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
+- Emscripten, [C++/JavaScript interop](https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html)
