@@ -13,7 +13,7 @@ RUN apt-get update \
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
-COPY cpp/gpai_core.cpp cpp/gpai_core.h cpp/gpai_calculations.hpp cpp/gpai_dispatch.cpp cpp/gpai_engine.cpp /app/cpp/
+COPY cpp/gpai_core.cpp cpp/gpai_core.h cpp/gpai_calculations.hpp cpp/gpai_dispatch.cpp cpp/gpai_engine.cpp cpp/gpai_engine.h /app/cpp/
 RUN g++ -std=c++17 -O2 -fPIC -shared -DGPAI_CORE_BUILD -I/app/cpp \
     /app/cpp/gpai_core.cpp /app/cpp/gpai_dispatch.cpp /app/cpp/gpai_engine.cpp -o /app/libgpai_core.so
 
