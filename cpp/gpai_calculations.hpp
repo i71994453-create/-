@@ -128,6 +128,29 @@ inline double root_bisection(const Function& f, double a, double b,
     throw std::runtime_error("bisection did not converge within max_iterations");
 }
 
+inline double derivative_quadratic_exact(double x, double a, double b) {
+    detail::require_finite(x, "x must be finite");
+    detail::require_finite(a, "a must be finite");
+    detail::require_finite(b, "b must be finite");
+    return detail::finite_result(2.0 * a * x + b,
+                                 "derivative result is not finite");
+}
+
+inline double integral_quadratic_exact(double start, double end,
+                                       double a, double b, double c) {
+    detail::require_finite(start, "start must be finite");
+    detail::require_finite(end, "end must be finite");
+    detail::require_finite(a, "a must be finite");
+    detail::require_finite(b, "b must be finite");
+    detail::require_finite(c, "c must be finite");
+    const auto antiderivative = [=](double x) {
+        return (a / 3.0) * x * x * x +
+               (b / 2.0) * x * x + c * x;
+    };
+    return detail::finite_result(antiderivative(end) - antiderivative(start),
+                                 "integral result is not finite");
+}
+
 }  // namespace calculus
 
 namespace mechanics_of_materials {
@@ -193,6 +216,55 @@ inline SolidShaftTorsion solid_shaft_torsion(double torque_nm, double diameter_m
     };
 }
 
+inline double cantilever_tip_deflection_m(double load_n, double length_m,
+                                                    double young_modulus_pa,
+                                                    double second_moment_m4) {
+    detail::require_finite(load_n, "load must be finite");
+    detail::require_positive(length_m, "length must be positive");
+    detail::require_positive(young_modulus_pa, "Young's modulus must be positive");
+    detail::require_positive(second_moment_m4, "second moment of area must be positive");
+    return detail::finite_result(
+        load_n * std::pow(length_m, 3) /
+            (3.0 * young_modulus_pa * second_moment_m4),
+        "deflection result is not finite");
+}
+
+inline double transverse_shear_stress_pa(double shear_force_n,
+                                         double first_moment_m3,
+                                         double second_moment_m4,
+                                         double thickness_m) {
+    detail::require_finite(shear_force_n, "shear force must be finite");
+    detail::require_finite(first_moment_m3, "first moment must be finite");
+    detail::require_positive(second_moment_m4, "second moment of area must be positive");
+    detail::require_positive(thickness_m, "thickness must be positive");
+    return detail::finite_result(
+        shear_force_n * first_moment_m3 / (second_moment_m4 * thickness_m),
+        "shear stress result is not finite");
+}
+
+inline double circular_second_moment_m4(double diameter_m) {
+    detail::require_positive(diameter_m, "diameter must be positive");
+    return detail::finite_result(pi * std::pow(diameter_m, 4) / 64.0,
+                                 "second moment result is not finite");
+}
+
+inline double circular_polar_moment_m4(double diameter_m) {
+    detail::require_positive(diameter_m, "diameter must be positive");
+    return detail::finite_result(pi * std::pow(diameter_m, 4) / 32.0,
+                                 "polar moment result is not finite");
+}
+
+inline double safety_factor(double allowable_stress_pa, double actual_stress_pa) {
+    detail::require_finite(allowable_stress_pa, "allowable stress must be finite");
+    detail::require_finite(actual_stress_pa, "actual stress must be finite");
+    if (allowable_stress_pa < 0.0 || actual_stress_pa == 0.0) {
+        throw std::invalid_argument("stress values are outside the valid domain");
+    }
+    return detail::finite_result(
+        allowable_stress_pa / std::abs(actual_stress_pa),
+        "safety-factor result is not finite");
+}
+
 }  // namespace mechanics_of_materials
 
 namespace thermodynamics {
@@ -250,6 +322,63 @@ inline double carnot_efficiency(double cold_reservoir_k,
         throw std::invalid_argument("hot-reservoir temperature must exceed cold");
     }
     return 1.0 - cold_reservoir_k / hot_reservoir_k;
+}
+
+inline double ideal_gas_volume_m3(double amount_mol, double temperature_k,
+                                    double pressure_pa) {
+    detail::require_positive(amount_mol, "amount must be positive");
+    detail::require_positive(temperature_k, "temperature must be positive in K");
+    detail::require_positive(pressure_pa, "pressure must be positive");
+    return detail::finite_result(
+        amount_mol * universal_gas_constant_j_per_mol_k * temperature_k / pressure_pa,
+        "volume result is not finite");
+}
+
+inline double ideal_gas_temperature_k(double pressure_pa, double volume_m3,
+                                      double amount_mol) {
+    detail::require_positive(pressure_pa, "pressure must be positive");
+    detail::require_positive(volume_m3, "volume must be positive");
+    detail::require_positive(amount_mol, "amount must be positive");
+    return detail::finite_result(
+        pressure_pa * volume_m3 /
+            (amount_mol * universal_gas_constant_j_per_mol_k),
+        "temperature result is not finite");
+}
+
+inline double heat_from_specific_heat_j(double mass_kg,
+                                        double specific_heat_j_per_kg_k,
+                                        double delta_temperature_k) {
+    detail::require_positive(mass_kg, "mass must be positive");
+    detail::require_positive(specific_heat_j_per_kg_k,
+                             "specific heat must be positive");
+    detail::require_finite(delta_temperature_k, "temperature change must be finite");
+    return detail::finite_result(
+        mass_kg * specific_heat_j_per_kg_k * delta_temperature_k,
+        "heat result is not finite");
+}
+
+inline double enthalpy_j(double internal_energy_j, double pressure_pa,
+                         double volume_m3) {
+    detail::require_finite(internal_energy_j, "internal energy must be finite");
+    detail::require_finite(pressure_pa, "pressure must be finite");
+    detail::require_finite(volume_m3, "volume must be finite");
+    if (pressure_pa < 0.0 || volume_m3 < 0.0) {
+        throw std::invalid_argument("pressure and volume cannot be negative");
+    }
+    return detail::finite_result(internal_energy_j + pressure_pa * volume_m3,
+                                 "enthalpy result is not finite");
+}
+
+inline double ideal_gas_delta_h_j(double amount_mol,
+                                  double molar_cp_j_per_mol_k,
+                                  double delta_temperature_k) {
+    detail::require_positive(amount_mol, "amount must be positive");
+    detail::require_positive(molar_cp_j_per_mol_k,
+                             "molar heat capacity must be positive");
+    detail::require_finite(delta_temperature_k, "temperature change must be finite");
+    return detail::finite_result(
+        amount_mol * molar_cp_j_per_mol_k * delta_temperature_k,
+        "enthalpy-change result is not finite");
 }
 
 }  // namespace thermodynamics
@@ -330,6 +459,84 @@ inline double triangle_area_m2(double side_a_m, double side_b_m,
                             (semiperimeter - side_b_m) *
                             (semiperimeter - side_c_m);
     return detail::finite_result(std::sqrt(radicand),
+                                 "triangle area result is not finite");
+}
+
+inline double distance_2d_m(double x1, double y1, double x2, double y2) {
+    detail::require_finite(x1, "x1 must be finite");
+    detail::require_finite(y1, "y1 must be finite");
+    detail::require_finite(x2, "x2 must be finite");
+    detail::require_finite(y2, "y2 must be finite");
+    return detail::finite_result(std::hypot(x2 - x1, y2 - y1),
+                                 "distance result is not finite");
+}
+
+inline double distance_3d_m(double x1, double y1, double z1,
+                            double x2, double y2, double z2) {
+    detail::require_finite(x1, "x1 must be finite");
+    detail::require_finite(y1, "y1 must be finite");
+    detail::require_finite(z1, "z1 must be finite");
+    detail::require_finite(x2, "x2 must be finite");
+    detail::require_finite(y2, "y2 must be finite");
+    detail::require_finite(z2, "z2 must be finite");
+    return detail::finite_result(std::hypot(x2 - x1, y2 - y1, z2 - z1),
+                                 "distance result is not finite");
+}
+
+inline double dot_product_3d(double ux, double uy, double uz,
+                             double vx, double vy, double vz) {
+    detail::require_finite(ux, "vector component must be finite");
+    detail::require_finite(uy, "vector component must be finite");
+    detail::require_finite(uz, "vector component must be finite");
+    detail::require_finite(vx, "vector component must be finite");
+    detail::require_finite(vy, "vector component must be finite");
+    detail::require_finite(vz, "vector component must be finite");
+    return detail::finite_result(
+        std::fma(ux, vx, std::fma(uy, vy, uz * vz)),
+        "dot-product result is not finite");
+}
+
+inline double vector_magnitude_3d(double x, double y, double z) {
+    detail::require_finite(x, "vector component must be finite");
+    detail::require_finite(y, "vector component must be finite");
+    detail::require_finite(z, "vector component must be finite");
+    return detail::finite_result(std::hypot(x, y, z),
+                                 "vector magnitude is not finite");
+}
+
+inline double vector_angle_3d_degrees(double ux, double uy, double uz,
+                                      double vx, double vy, double vz) {
+    const double magnitude_u = vector_magnitude_3d(ux, uy, uz);
+    const double magnitude_v = vector_magnitude_3d(vx, vy, vz);
+    detail::require_positive(magnitude_u, "first vector must be non-zero");
+    detail::require_positive(magnitude_v, "second vector must be non-zero");
+    const double cosine = dot_product_3d(ux, uy, uz, vx, vy, vz) /
+                          (magnitude_u * magnitude_v);
+    detail::require_finite(cosine, "angle calculation is not finite");
+    const double bounded_cosine = cosine > 1.0 ? 1.0 :
+                                  (cosine < -1.0 ? -1.0 : cosine);
+    return detail::finite_result(
+        std::acos(bounded_cosine) * 180.0 / pi,
+        "angle result is not finite");
+}
+
+inline double hypotenuse(double a, double b) {
+    detail::require_finite(a, "a must be finite");
+    detail::require_finite(b, "b must be finite");
+    if (a < 0.0 || b < 0.0) {
+        throw std::invalid_argument("side lengths cannot be negative");
+    }
+    return detail::finite_result(std::hypot(a, b),
+                                 "hypotenuse result is not finite");
+}
+
+inline double triangle_area_from_base_height_m2(double base_m, double height_m) {
+    detail::require_finite(base_m, "base must be finite");
+    detail::require_finite(height_m, "height must be finite");
+    if (base_m < 0.0 || height_m < 0.0) {
+        throw std::invalid_argument("base and height cannot be negative");
+    }
+    return detail::finite_result(0.5 * base_m * height_m,
                                  "triangle area result is not finite");
 }
 
