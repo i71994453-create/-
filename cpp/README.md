@@ -49,6 +49,54 @@ int main() {
 c++ -std=c++17 -Wall -Wextra -pedantic example.cpp -o example
 ```
 
+## Python `ctypes` 연결
+
+`gpai_core.cpp`는 기존 계산 함수의 C ABI 브리지입니다. 각 함수는 결과를 포인터로 받고, 반환값으로 상태를 전달합니다. C++ 예외는 브리지를 넘어가지 않습니다.
+
+| 상태 코드 | 의미 |
+|---|---|
+| `GPAI_STATUS_OK` (0) | 성공 |
+| `GPAI_STATUS_INVALID_ARGUMENT` (1) | 잘못된 입력 또는 null 출력 포인터 |
+| `GPAI_STATUS_OVERFLOW` (2) | 결과가 유한한 숫자가 아님 |
+| `GPAI_STATUS_INTERNAL_ERROR` (3) | 예상하지 못한 내부 오류 |
+
+Linux 빌드 예시:
+
+```sh
+c++ -std=c++17 -fPIC -shared -DGPAI_CORE_BUILD \\
+  cpp/gpai_core.cpp -o libgpai_core.so
+```
+
+Windows MSVC DLL 빌드 예시:
+
+```bat
+cl /std:c++17 /EHsc /LD /DGPAI_CORE_BUILD cpp/gpai_core.cpp /Fe:gpai_core.dll
+```
+
+Python 호출 예시:
+
+```python
+import ctypes
+
+lib = ctypes.CDLL("./libgpai_core.so")
+solve = lib.gpai_thermo_ideal_gas_pressure
+solve.argtypes = [
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.POINTER(ctypes.c_double),
+]
+solve.restype = ctypes.c_int
+
+pressure = ctypes.c_double()
+status = solve(1.0, 300.0, 0.025, ctypes.byref(pressure))
+if status != 0:
+    raise ValueError(f"GPAI calculation failed: status={status}")
+print(pressure.value, "Pa")
+```
+
+C ABI의 미적분 래퍼는 현재 `f(x)=ax²+bx+c`를 받습니다. C++ 내부 헤더는 함수 객체를 받아 더 일반적인 함수도 계산하지만, Python 함수 객체를 직접 넘기는 브리지는 별도 구현이 필요합니다.
+
 ## 단위와 해석 한계
 
 - 길이 m, 면적 m², 부피 m³, 힘 N, 응력·탄성계수 Pa, 에너지 J, 압력 Pa, 토크 N·m, 몰수 mol을 사용합니다.
