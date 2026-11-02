@@ -120,7 +120,6 @@ inline double root_bisection(const Function& f, double a, double b,
 
         if (std::signbit(fa) != std::signbit(fm)) {
             b = midpoint;
-            fb = fm;
         } else {
             a = midpoint;
             fa = fm;
