@@ -8,9 +8,6 @@
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
-constexpr double kGasConstant = 8.314462618;
-
 double error_value() {
     return std::numeric_limits<double>::quiet_NaN();
 }
