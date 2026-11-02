@@ -297,8 +297,9 @@ function calculate(event) {
 
 
 function apiBaseUrl() {
-  const value = window.GPAI_API_BASE_URL || "";
-  return value.trim().replace(/\\/+$/, "");
+  let value = (window.GPAI_API_BASE_URL || "").trim();
+  while (value.endsWith("/")) value = value.slice(0, -1);
+  return value;
 }
 
 function setupAiCalculator() {
