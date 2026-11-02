@@ -57,3 +57,13 @@ c++ -std=c++17 -Wall -Wextra -pedantic example.cpp -o example
 - 재료역학 함수는 기본 선형 탄성 공식입니다. 좌굴, 소성, 피로, 응력 집중, 복합 하중, 실제 부재의 안전 설계를 대신하지 않습니다.
 - 열역학 함수의 상태식은 이상기체 가정입니다. 실제 유체의 상태방정식이나 상변화는 포함하지 않습니다.
 - 이 헤더는 계산 라이브러리이며 웹 UI 연결 및 WebAssembly JavaScript 바인딩은 별도 작업입니다. Emscripten에서 예외를 JavaScript로 전달하려면 해당 빌드 설정도 지정해야 합니다.
+
+## 참고 자료
+
+- UC Berkeley, [Math 128A Lecture Notes, Chapter 4: Numerical Differentiation and Integration](https://persson.berkeley.edu/math128a/lecture_notes/math128a_lecture_notes_chapter_4.html): 중앙차분과 합성 Simpson 적분 공식 및 근사 오차를 설명합니다.
+- University of Colorado Boulder, [Introductory Engineering Design, Chapter 14: The Basics of Engineering Mechanics](https://www.colorado.edu/program/ide/sites/default/files/attached-files/introductory_engineering_design_textbook_0_0.pdf): 축응력·Hooke 법칙·축변형, 굽힘 응력, 원형축 비틀림 및 각변형 공식을 설명합니다.
+- MIT OpenCourseWare, [2.017J Topics in Machine Elements](https://ocw.mit.edu/courses/2-017j-design-of-electromechanical-robotic-systems-fall-2009/16cb0f850752422026a85d838f30e340_MIT2_017JF09_machines.pdf): 원형축의 극관성모멘트, 비틀림각, 비틀림 및 굽힘 응력 공식을 요약합니다.
+- UC Davis Physics 9B, [First Law and Related Results](https://kiskis.physics.ucdavis.edu/student/phy9b_11/fstl.pdf): 이상기체 상태방정식, 제1법칙의 부호 규약, `deltaU=n*Cv*deltaT`, 등압 일 공식을 정리합니다.
+- University of Nebraska–Lincoln, [Thermodynamics formula sheet](https://physics.unl.edu/sites/unl.edu.cas.physics/files/media/file/DayIIExam_Aug24.pdf): 카르노 효율 관계를 포함한 열역학 요약 자료입니다.
+
+이 참고 자료는 구현된 기초식의 출처입니다. 실제 설계 검토에서는 재료 데이터, 하중 조건, 적용 규격과 안전계수를 별도로 확인해야 합니다.
