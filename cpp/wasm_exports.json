@@ -35,5 +35,6 @@
   "_gpai_geometry_distance_3d",
   "_gpai_geometry_dot_product_3d",
   "_gpai_geometry_vector_magnitude_3d",
-  "_gpai_geometry_vector_angle_3d_degrees"
+  "_gpai_geometry_vector_angle_3d_degrees",
+  "_gpai_engine_insertion_sort"
 ]
