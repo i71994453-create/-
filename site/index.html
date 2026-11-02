@@ -8,6 +8,7 @@
   <title>GPAI | 수학·공학 계산실</title>
   <link rel="stylesheet" href="assets/styles.css">
   <script src="assets/gpai_core.js" defer></script>
+  <script src="assets/config.js" defer></script>
   <script src="assets/app.js" defer></script>
 </head>
 <body>
@@ -36,9 +37,23 @@
       <p class="fine-print">분류 모델은 포함된 예시 48개로 학습한 소형 나이브 베이즈 분류기입니다. 표시되는 점수는 보정된 확률이 아니며, 문제 풀이를 생성하지 않습니다.</p>
     </section>
 
+    <section class="panel ai-panel" aria-labelledby="ai-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">02 / AI 풀이 안내</p><h2 id="ai-title">자연어로 계산 문제를 물어보세요</h2></div>
+        <span id="ai-status" class="status">AI 서버 주소 확인 중</span>
+      </div>
+      <label for="ai-question">예: 반지름 0.5 m인 원의 넓이를 공식과 함께 알려줘</label>
+      <div class="ask-row">
+        <textarea id="ai-question" rows="3" maxlength="1500" placeholder="문제와 값, 단위를 적어 주세요."></textarea>
+        <button id="ai-solve-button" class="button primary" type="button" disabled>C++ 계산 요청</button>
+      </div>
+      <div id="ai-result" class="ai-result" aria-live="polite">AI 서버를 연결하면 Gemini가 계산 항목을 고르고 C++ 코어가 수치를 계산합니다.</div>
+      <p class="fine-print">입력한 문제는 설정한 GPAI API 서버와 AI 제공자에게 전송됩니다. 실제 구조 안전 판정이 아닌 교육용 기초 계산입니다.</p>
+    </section>
+
     <section class="panel calculator-panel" aria-labelledby="calculator-title">
       <div class="section-heading">
-        <div><p class="eyebrow">02 / C++ 계산기</p><h2 id="calculator-title">공식과 입력값을 선택하세요</h2></div>
+        <div><p class="eyebrow">03 / C++ 계산기</p><h2 id="calculator-title">공식과 입력값을 선택하세요</h2></div>
         <span id="engine-status" class="status">C++ 엔진 불러오는 중</span>
       </div>
       <div class="selector-row">
